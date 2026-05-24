@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Live QR</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+    <style>
+        body {
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+            background:#0f172a;
+            color:white;
+            flex-direction:column;
+        }
+
+        #qrBox {
+            background:white;
+            padding:20px;
+            border-radius:20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>Live Attendance QR (Auto Refresh Every 30s)</h2>
+
+<div id="qrBox">
+    <canvas id="qrCanvas"></canvas>
+</div>
+
+<p id="status">Generating QR...</p>
+
+<script>
+    const lectureId = [[${lectureId}]];
+
+    async function loadQR() {
+        const res = await fetch(/lecture/qr/${lectureId});
+        const text = await res.text();
+
+        if (text === "EXPIRED") {
+            document.getElementById("status").innerText = "Lecture Ended";
+            return;
+        }
+
+        QRCode.toCanvas(document.getElementById("qrCanvas"), text);
+
+        document.getElementById("status").innerText =
+            "Last updated: " + new Date().toLocaleTimeString();
+    }
+
+    loadQR();
+    setInterval(loadQR, 30000); // refresh every 30 sec
+</script>
+
+</body>
+</html>

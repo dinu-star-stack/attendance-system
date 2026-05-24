@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lecturer Login</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:'Poppins',sans-serif;
+            height:100vh;
+            overflow:hidden;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            position:relative;
+            background:
+                    linear-gradient(135deg,
+                    #0f172a,
+                    #1e293b,
+                    #334155,
+                    #0f172a);
+            background-size:400% 400%;
+            animation:bgAnimation 12s ease infinite;
+        }
+
+        @keyframes bgAnimation{
+            0%{background-position:0% 50%;}
+            50%{background-position:100% 50%;}
+            100%{background-position:0% 50%;}
+        }
+
+        /* Animated circles */
+
+        .circle{
+            position:absolute;
+            border-radius:50%;
+            background:rgba(255,255,255,0.08);
+            animation:float 8s infinite ease-in-out;
+        }
+
+        .circle1{
+            width:300px;
+            height:300px;
+            top:-100px;
+            left:-80px;
+        }
+
+        .circle2{
+            width:250px;
+            height:250px;
+            bottom:-80px;
+            right:-50px;
+            animation-delay:2s;
+        }
+
+        .circle3{
+            width:150px;
+            height:150px;
+            top:20%;
+            right:15%;
+            animation-delay:4s;
+        }
+
+        @keyframes float{
+            0%,100%{
+                transform:translateY(0px);
+            }
+            50%{
+                transform:translateY(-25px);
+            }
+        }
+
+        .login-card{
+            width:420px;
+            padding:45px;
+            border-radius:25px;
+            backdrop-filter:blur(18px);
+            background:rgba(255,255,255,0.12);
+            border:1px solid rgba(255,255,255,0.15);
+            box-shadow:0 15px 40px rgba(0,0,0,0.4);
+            position:relative;
+            z-index:10;
+            animation:fadeIn 1s ease;
+        }
+
+        @keyframes fadeIn{
+            from{
+                opacity:0;
+                transform:translateY(20px);
+            }
+            to{
+                opacity:1;
+                transform:translateY(0);
+            }
+        }
+
+        .logo-icon{
+            width:80px;
+            height:80px;
+            margin:auto;
+            margin-bottom:20px;
+            border-radius:50%;
+            background:linear-gradient(135deg,#3b82f6,#06b6d4);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:white;
+            font-size:32px;
+            box-shadow:0 10px 20px rgba(59,130,246,0.4);
+        }
+
+        .title{
+            color:white;
+            font-weight:700;
+            text-align:center;
+            margin-bottom:8px;
+        }
+
+        .subtitle{
+            color:#cbd5e1;
+            text-align:center;
+            margin-bottom:35px;
+            font-size:14px;
+        }
+
+        .form-control{
+            height:52px;
+            border-radius:14px;
+            border:none;
+            background:rgba(255,255,255,0.15);
+            color:white;
+            padding-left:45px;
+            font-size:15px;
+        }
+
+        .form-control:focus{
+            background:rgba(255,255,255,0.2);
+            color:white;
+            box-shadow:none;
+            border:1px solid #3b82f6;
+        }
+
+        .form-control::placeholder{
+            color:#d1d5db;
+        }
+
+        .input-group{
+            position:relative;
+        }
+
+        .input-icon{
+            position:absolute;
+            top:17px;
+            left:15px;
+            color:#d1d5db;
+            z-index:100;
+        }
+
+        .btn-login{
+            height:52px;
+            border:none;
+            border-radius:14px;
+            background:linear-gradient(135deg,#2563eb,#06b6d4);
+            color:white;
+            font-weight:600;
+            transition:0.3s;
+            box-shadow:0 10px 20px rgba(37,99,235,0.35);
+        }
+
+        .btn-login:hover{
+            transform:translateY(-2px);
+            background:linear-gradient(135deg,#1d4ed8,#0891b2);
+        }
+
+        .forgot-link{
+            color:#cbd5e1;
+            text-decoration:none;
+            transition:0.3s;
+            font-size:14px;
+        }
+
+        .forgot-link:hover{
+            color:white;
+        }
+
+        .alert{
+            border-radius:12px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="circle circle1"></div>
+<div class="circle circle2"></div>
+<div class="circle circle3"></div>
+
+<div class="login-card">
+
+    <div class="logo-icon">
+        <i class="fas fa-chalkboard-teacher"></i>
+    </div>
+
+    <h2 class="title">Lecturer Login</h2>
+
+    <p class="subtitle">
+        ATI Attendance Management System
+    </p>
+
+    <div th:if="${error}" class="alert alert-danger text-center" th:text="${error}"></div>
+
+    <form method="post" th:action="@{/lecturer/login}">
+
+        <div class="mb-3 input-group">
+            <i class="fas fa-id-card input-icon"></i>
+
+            <input type="text"
+                   name="lecturerId"
+                   class="form-control"
+                   placeholder="Enter Lecturer ID"
+                   required>
+        </div>
+
+        <div class="mb-4 input-group">
+            <i class="fas fa-lock input-icon"></i>
+
+            <input type="password"
+                   name="password"
+                   class="form-control"
+                   placeholder="Enter Password"
+                   required>
+        </div>
+
+        <button type="submit" class="btn btn-login w-100">
+            <i class="fas fa-right-to-bracket"></i>
+            Login
+        </button>
+
+    </form>
+
+    <hr>
+
+    <form th:action="@{/lecturer/first-time-login}"
+          method="post">
+
+        <input type="text"
+               name="lecturerId"
+               class="form-control mb-3"
+               placeholder="Enter Lecturer ID"
+               required>
+
+        <button class="btn btn-warning w-100">
+            First Time Login? Create Password
+        </button>
+
+    </form>
+
+    <div class="text-center mt-4">
+        <a th:href="@{/lecturer/forgot-password}" class="forgot-link">
+            Forgot Password?
+        </a>
+    </div>
+
+</div>
+
+</body>
+</html>

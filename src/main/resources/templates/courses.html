@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>ATI Courses</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #fff;
+            min-height: 100vh;
+        }
+
+        h2 {
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* Glass Cards */
+        .card {
+            border-radius: 20px;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: all 0.4s ease;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 1.3rem;
+            Color:#ffffff;
+            text-shadow:0 2px 8px rgba(0,0,0,0.6);
+        }
+
+        /* Button Glow */
+        .btn-view {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            border: none;
+            color: #fff;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 30px;
+            transition: 0.3s;
+        }
+
+        .btn-view:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 15px rgba(0, 198, 255, 0.8);
+        }
+
+        /* Modal */
+        .modal-content {
+            border-radius: 20px;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #00c6ff, #0072ff);
+            color: white;
+            border: none;
+        }
+
+        .modal-body {
+            background: #f9f9f9;
+            color: #333;
+        }
+
+        .modal-body h5 {
+            font-weight: 600;
+            color: #0072ff;
+        }
+
+        .modal-body img {
+            border-radius: 15px;
+            transition: 0.4s;
+        }
+
+        .modal-body img:hover {
+            transform: scale(1.02);
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+
+        /* Floating Back Button */
+        .back-btn {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-weight: 500;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: 0.3s;
+        }
+
+        .back-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+
+    <h2 class="text-center mb-5">ATI Higher National Diploma Courses</h2>
+
+    <div class="row g-4">
+
+        <div class="col-md-4" th:each="course, stat : ${courses}">
+            <div class="card h-100 text-center p-4">
+
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${course.title}">Course Title</h5>
+
+                    <button class="btn btn-view mt-3"
+                            data-bs-toggle="modal"
+                            th:attr="data-bs-target='#modal' + ${stat.index}">
+                        View Full Details
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal -->
+            <div class="modal fade" th:id="'modal' + ${stat.index}" tabindex="-1">
+                <div class="modal-dialog modal-xl modal-dialog-centered">
+                    <div class="modal-content">
+
+                        <div class="modal-header">
+                            <h4 class="modal-title w-100 text-center" th:text="${course.title}"></h4>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+
+                            <img th:src="@{${course.image}}" class="img-fluid mb-4" style="width:100%; height:400px; object-fit:cover;">
+
+                            <p class="fs-5" th:text="${course.description}"></p>
+
+                            <hr>
+                            <h5>Course Duration:</h5>
+                            <p class="fw-bold" th:text="${course.duration}"></p>
+
+                            <hr>
+                            <h5>Focus Areas:</h5>
+                            <p th:text="${course.focus}"></p>
+
+                            <hr>
+                            <h5>Conducted At:</h5>
+                            <p th:text="${course.extra}"></p>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Floating Button -->
+    <a href="/" class="btn back-btn position-fixed top-0 end-0 m-4">
+        ⬅ Back
+    </a>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Edit Lecturer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+<div class="container mt-5">
+
+    <h2 class="text-center mb-4">Edit Lecturer</h2>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <div class="card p-4">
+
+                <form th:action="@{/admin/lecturer/update}" method="post">
+
+                    <input type="hidden" th:value="${lecturer.id}" name="id"/>
+
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <input type="text" name="name"
+                               th:value="${lecturer.name}"
+                               class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" name="email"
+                               th:value="${lecturer.email}"
+                               class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Lecturer ID</label>
+                        <input type="text" name="lecturerId"
+                               th:value="${lecturer.lecturerId}"
+                               class="form-control" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Update
+                    </button>
+
+                    <a th:href="@{/admin/dashboard}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
