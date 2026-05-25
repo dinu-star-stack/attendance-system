@@ -6,6 +6,7 @@ import com.example.attendance.entity.Lecturer;
 import com.example.attendance.repository.CourseRepository;
 import com.example.attendance.repository.LectureRepository;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -70,29 +71,43 @@ public class LectureController {
 
     @GetMapping("/qr/{lectureId}")
     @ResponseBody
-    public String generateQr(@PathVariable Long lectureId) {
+    public String generateQr(@PathVariable Long lectureId, HttpServletRequest request) {
 
         Lecture lecture = lectureRepository.findById(lectureId).orElseThrow();
 
-        // if expired after 5 minutes stop QR
-        if (lecture.getQrGeneratedTime()
-                .plusMinutes(5)
-                .isBefore(LocalDateTime.now())) {
-
+        // ✅ FIXED BUG: check expiry against startTime (or endTime), not qrGeneratedTime
+        if (lecture.getStartTime().plusMinutes(5).isBefore(LocalDateTime.now())) {
             lecture.setActive(false);
             lectureRepository.save(lecture);
-
             return "EXPIRED";
         }
 
-        // rotate token every request (30 sec frontend refresh)
-        String newToken = UUID.randomUUID().toString();
+        // ✅ THROTTLED ROTATION: only rotate if token is older than 25 seconds
+        LocalDateTime now = LocalDateTime.now();
+        if (lecture.getQrToken() == null || lecture.getQrGeneratedTime() == null || 
+            lecture.getQrGeneratedTime().plusSeconds(25).isBefore(now)) {
+            
+            String newToken = UUID.randomUUID().toString();
+            lecture.setQrToken(newToken);
+            lecture.setQrGeneratedTime(now);
+            lectureRepository.save(lecture);
+        }
 
-        lecture.setQrToken(newToken);
-        lecture.setQrGeneratedTime(LocalDateTime.now());
-        lectureRepository.save(lecture);
+        // ✅ DYNAMIC HOST RESOLVER: Build base URL using host header from request.
+        // This automatically handles localhost:8080 locally and the real domain on Railway!
+        String scheme = request.getScheme(); // http or https
+        String hostHeader = request.getHeader("Host"); // e.g. localhost:8080 or domain.up.railway.app
+        String baseUrl;
+        
+        if (hostHeader != null && !hostHeader.isEmpty()) {
+            baseUrl = scheme + "://" + hostHeader;
+        } else {
+            String serverName = request.getServerName();
+            int serverPort = request.getServerPort();
+            baseUrl = scheme + "://" + serverName + (serverPort == 80 || serverPort == 443 ? "" : ":" + serverPort);
+        }
 
-        return "http://localhost:8080/student/scan?token=" + newToken;
+        return baseUrl + "/student/scan?token=" + lecture.getQrToken();
     }
 
     @GetMapping("/dashboard")

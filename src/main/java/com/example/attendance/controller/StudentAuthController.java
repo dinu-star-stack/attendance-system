@@ -1,5 +1,9 @@
 package com.example.attendance.controller;
 
+import com.example.attendance.entity.Lecture;
+import com.example.attendance.entity.Attendance;
+import com.example.attendance.repository.LectureRepository;
+import com.example.attendance.repository.AttendanceRepository;
 import com.example.attendance.entity.Student;
 import com.example.attendance.repository.StudentRepository;
 import com.example.attendance.service.EmailService;
@@ -13,7 +17,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
-
+import java.util.List;
 import java.util.Optional;
 
 @Controller
@@ -23,6 +27,8 @@ public class StudentAuthController {
 
     private final StudentRepository studentRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final LectureRepository lectureRepository;
+    private final AttendanceRepository attendanceRepository;
 
     @Value("${app.reset-password.base-url:http://localhost:8080}")
     private String baseUrl;
@@ -139,7 +145,23 @@ public class StudentAuthController {
         if (student == null) {
             return "redirect:/student/login";
         }
+        
+        // Compute attendance progress stats
+        List<Lecture> totalLectures = lectureRepository.findByCourseId(student.getCourse().getId());
+        List<Attendance> presentAttendances = attendanceRepository.findByCourseId(student.getCourse().getId())
+                .stream()
+                .filter(att -> att.getStudent().getId().equals(student.getId()) && "Present".equalsIgnoreCase(att.getStatus()))
+                .toList();
+
+        int totalConducted = totalLectures.size();
+        int totalAttended = presentAttendances.size();
+        int attendancePercentage = totalConducted > 0 ? (totalAttended * 100 / totalConducted) : 100;
+
         model.addAttribute("student", student);
+        model.addAttribute("totalConducted", totalConducted);
+        model.addAttribute("totalAttended", totalAttended);
+        model.addAttribute("attendancePercentage", attendancePercentage);
+        
         return "student-dashboard"; // Thymeleaf template
     }
 

@@ -7,6 +7,7 @@ import com.example.attendance.repository.AttendanceRepository;
 import com.example.attendance.repository.LectureRepository;
 import com.example.attendance.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import jakarta.servlet.http.HttpSession;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -27,6 +31,9 @@ public class StudentScanController {
 
     @Autowired
     private AttendanceRepository attendanceRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     // Show QR scan page
     @GetMapping("/student/scan")
@@ -78,6 +85,18 @@ public class StudentScanController {
                 .build();
 
         attendanceRepository.save(attendance);
+
+        // ✅ Broadcast successful attendance over WebSockets in real-time
+        try {
+            Map<String, String> payload = new HashMap<>();
+            payload.put("studentName", student.getName());
+            payload.put("registrationNumber", student.getRegistrationNumber());
+            payload.put("time", LocalDateTime.now().format(DateTimeFormatter.ofPattern("hh:mm:ss a")));
+            
+            messagingTemplate.convertAndSend("/topic/attendance/" + lecture.getId(), payload);
+        } catch (Exception e) {
+            System.err.println("WebSocket Broadcast Error: " + e.getMessage());
+        }
 
         model.addAttribute("message", "Attendance marked successfully!");
         model.addAttribute("lectureName", lecture.getLectureName());

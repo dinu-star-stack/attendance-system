@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Success | ATI Attendance</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #090d16, #111827, #090d16);
+            --glass-bg: rgba(30, 41, 59, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-success: #10b981;
+            --accent-success-glow: rgba(16, 185, 129, 0.15);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background glows */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--accent-success-glow) 0%, transparent 70%);
+            top: 20%;
+            left: 20%;
+            pointer-events: none;
+        }
+
+        .success-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px) saturate(120%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 45px 35px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            z-index: 10;
+            position: relative;
+            text-align: center;
+            transform: scale(0.95);
+            opacity: 0;
+            animation: card-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes card-pop {
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Checkmark Animation */
+        .success-icon-container {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.1);
+            border: 2px solid var(--accent-success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-success);
+            font-size: 2.5rem;
+            margin: 0 auto 25px auto;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+            position: relative;
+            animation: bounce-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes bounce-in {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        h2 {
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .success-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin-bottom: 25px;
+        }
+
+        /* Table Details */
+        .details-list {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: left;
+            margin-bottom: 30px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px 0;
+            font-size: 0.95rem;
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .detail-item:first-child {
+            padding-top: 0;
+        }
+
+        .detail-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: var(--text-main);
+            font-weight: 600;
+            text-align: right;
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+
+        .btn-dashboard {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #0f172a;
+            font-weight: 700;
+            border: none;
+            border-radius: 14px;
+            padding: 14px;
+            width: 100%;
+            font-size: 1.05rem;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-dashboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45);
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+
+<div class="success-card">
+    <div class="success-icon-container">
+        <i class="fas fa-check"></i>
+    </div>
+
+    <h2>CONGRATULATIONS!</h2>
+    <div class="success-badge">Attendance Logged</div>
+    
+    <p class="text-muted mb-4" th:text="${message}">Your attendance was marked successfully!</p>
+
+    <!-- Details Box -->
+    <div class="details-list">
+        <div class="detail-item">
+            <span class="detail-label">Lecture Name</span>
+            <span class="detail-value" th:text="${lectureName}">OOP Design Patterns</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Target Course</span>
+            <span class="detail-value text-info" th:text="${courseName}">HNDIT</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Session Date</span>
+            <span class="detail-value" th:text="${date}">2026-05-25</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Verification Mode</span>
+            <span class="detail-value" style="color: var(--accent-success);">Secure QR Scan</span>
+        </div>
+    </div>
+
+    <!-- Return to Portal -->
+    <a th:href="@{/student/dashboard}" class="btn-dashboard">
+        <i class="fas fa-home"></i> Return to Student Portal
+    </a>
+</div>
+
+</body>
+</html>

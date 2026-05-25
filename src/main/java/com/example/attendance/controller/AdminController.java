@@ -125,16 +125,13 @@ public class AdminController {
             return "add-student";
         }
 
-        if (student.getPassword() == null || student.getPassword().isEmpty()) {
-            model.addAttribute("course", courseOpt.get());
-            model.addAttribute("student", student);
-            model.addAttribute("error", "Password is required!");
-            return "add-student";
-        }
-
         student.setId(null);
         student.setCourse(courseOpt.get());
-        student.setPassword(passwordEncoder.encode(student.getPassword())); // ADD THIS
+        if (student.getPassword() != null && !student.getPassword().isEmpty()) {
+            student.setPassword(passwordEncoder.encode(student.getPassword()));
+        } else {
+            student.setPassword(null);
+        }
         studentRepository.save(student);
 
         return "redirect:/admin/course/" + id + "/add-student?success";
@@ -196,16 +193,13 @@ public class AdminController {
             return "add-lecturer";
         }
 
-        if (lecturer.getPassword() == null || lecturer.getPassword().isEmpty()) {
-            model.addAttribute("course", courseOpt.get());
-            model.addAttribute("lecturer", lecturer);
-            model.addAttribute("error", "Password is required!");
-            return "add-lecturer";
-        }
-
         lecturer.setId(null);
         lecturer.setCourses(List.of(courseOpt.get()));
-        lecturer.setPassword(passwordEncoder.encode(lecturer.getPassword())); // ADD THIS
+        if (lecturer.getPassword() != null && !lecturer.getPassword().isEmpty()) {
+            lecturer.setPassword(passwordEncoder.encode(lecturer.getPassword()));
+        } else {
+            lecturer.setPassword(null);
+        }
         lecturerRepository.save(lecturer);
 
         return "redirect:/admin/course/" + id + "/add-lecturer?success";
