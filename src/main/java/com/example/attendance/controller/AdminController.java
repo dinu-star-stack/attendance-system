@@ -56,7 +56,7 @@ public class AdminController {
                           Model model,
                           HttpSession session) {
 
-        Admin admin = adminService.login(username, password);
+        Admin admin = adminService.login(username.trim(), password);
         if (admin == null) {
             model.addAttribute("error", "Invalid username or password");
             return "admin-login";

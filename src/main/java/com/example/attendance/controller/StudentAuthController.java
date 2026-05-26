@@ -48,7 +48,7 @@ public class StudentAuthController {
                         HttpSession session,
                         Model model) {
 
-        Optional<Student> optionalStudent = studentRepository.findByRegistrationNumber(registrationNumber);
+        Optional<Student> optionalStudent = studentRepository.findByRegistrationNumber(registrationNumber.trim());
 
         if (optionalStudent.isEmpty()) {
             model.addAttribute("error", "Registration number not found!");
@@ -60,7 +60,7 @@ public class StudentAuthController {
         // FIRST TIME LOGIN
         if (student.getPassword() == null || student.getPassword().isEmpty()) {
 
-            return "redirect:/student/set-password?reg=" + registrationNumber;
+            return "redirect:/student/set-password?reg=" + registrationNumber.trim();
         }
 
         // Check password
@@ -81,7 +81,7 @@ public class StudentAuthController {
             Model model) {
 
         Optional<Student> optionalStudent =
-                studentRepository.findByRegistrationNumber(registrationNumber);
+                studentRepository.findByRegistrationNumber(registrationNumber.trim());
 
         if (optionalStudent.isEmpty()) {
 

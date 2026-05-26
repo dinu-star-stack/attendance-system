@@ -44,7 +44,7 @@ public class LecturerAuthController {
                         HttpSession session,
                         Model model) {
 
-        Optional<Lecturer> optionalLecturer = lecturerRepository.findByLecturerId(lecturerId);
+        Optional<Lecturer> optionalLecturer = lecturerRepository.findByLecturerId(lecturerId.trim());
 
         if (optionalLecturer.isEmpty()) {
             model.addAttribute("error", "Lecturer ID not found!");
@@ -78,7 +78,7 @@ public class LecturerAuthController {
             Model model) {
 
         Optional<Lecturer> optionalLecturer =
-                lecturerRepository.findByLecturerId(lecturerId);
+                lecturerRepository.findByLecturerId(lecturerId.trim());
 
         if (optionalLecturer.isEmpty()) {
 
