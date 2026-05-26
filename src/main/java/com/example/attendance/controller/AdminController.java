@@ -15,6 +15,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -357,5 +362,180 @@ public class AdminController {
         Long courseId = lecturer.getCourses().get(0).getId();
 
         return "redirect:/admin/course/" + courseId + "/view-lecturers";
+    }
+
+    // ===== REAL-TIME AJAX STUDENT SEARCH API =====
+    @GetMapping("/api/search-students")
+    @ResponseBody
+    public List<Map<String, String>> searchStudents(@RequestParam String name, HttpSession session) {
+        if (session.getAttribute("admin") == null) {
+            return Collections.emptyList();
+        }
+
+        List<Student> students = studentRepository.findAll();
+        return students.stream()
+                .filter(s -> s.getName().toLowerCase().contains(name.toLowerCase()))
+                .map(s -> {
+                    Map<String, String> map = new HashMap<>();
+                    map.put("name", s.getName());
+                    map.put("email", s.getEmail());
+                    map.put("regNumber", s.getRegistrationNumber());
+                    map.put("batchYear", String.valueOf(s.getBatchYear()));
+                    map.put("courseType", s.getCourseType());
+                    map.put("courseName", s.getCourse().getCourseName());
+                    return map;
+                })
+                .collect(Collectors.toList());
+    }
+
+    // ===== CSV TEMPLATES DOWNLOAD =====
+    @GetMapping("/template/students")
+    public void downloadStudentTemplate(HttpServletResponse response) throws IOException {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=students_template.csv");
+        response.getWriter().println("Name,Email,Registration Number,Batch Year,Course Type");
+        response.getWriter().println("John Doe,johndoe@gmail.com,REG/2026/001,2025,Fulltime");
+        response.getWriter().println("Jane Smith,janesmith@gmail.com,REG/2026/002,2023,Parttime");
+    }
+
+    @GetMapping("/template/lecturers")
+    public void downloadLecturerTemplate(HttpServletResponse response) throws IOException {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=lecturers_template.csv");
+        response.getWriter().println("Name,Email,Lecturer ID");
+        response.getWriter().println("Dr. Robert Downey,robert@gmail.com,L201");
+        response.getWriter().println("Prof. Albert Einstein,albert@gmail.com,L202");
+    }
+
+    // ===== CSV BULK IMPORTS =====
+    @PostMapping("/course/{id}/import-students")
+    public String importStudents(@PathVariable Long id,
+                                 @RequestParam("file") MultipartFile file,
+                                 RedirectAttributes redirectAttributes,
+                                 HttpSession session) {
+        if (session.getAttribute("admin") == null) return "redirect:/admin/login";
+
+        Course course = courseRepository.findById(id).orElseThrow();
+
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
+            return "redirect:/admin/dashboard";
+        }
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            String line;
+            boolean isHeader = true;
+            int importedCount = 0;
+            int duplicateCount = 0;
+
+            while ((line = br.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                if (isHeader) {
+                    isHeader = false; // skip header row
+                    continue;
+                }
+
+                String[] data = line.split(",");
+                if (data.length < 5) continue;
+
+                String name = data[0].trim();
+                String email = data[1].trim();
+                String regNumber = data[2].trim();
+                
+                int batchYear;
+                try {
+                    batchYear = Integer.parseInt(data[3].trim());
+                } catch (NumberFormatException e) {
+                    batchYear = 2025; // default fallback
+                }
+                
+                String courseType = data[4].trim();
+
+                // Check duplicate
+                if (studentRepository.findByRegistrationNumber(regNumber).isPresent()) {
+                    duplicateCount++;
+                    continue;
+                }
+
+                Student student = Student.builder()
+                        .name(name)
+                        .email(email)
+                        .registrationNumber(regNumber)
+                        .batchYear(batchYear)
+                        .courseType(courseType)
+                        .course(course)
+                        .password(null) // first time login will set password
+                        .build();
+
+                studentRepository.save(student);
+                importedCount++;
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage", "Successfully imported " + importedCount + " students to " + course.getCourseCode() + "! (Duplicates skipped: " + duplicateCount + ")");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error importing CSV: " + e.getMessage());
+        }
+
+        return "redirect:/admin/dashboard";
+    }
+
+    @PostMapping("/course/{id}/import-lecturers")
+    public String importLecturers(@PathVariable Long id,
+                                  @RequestParam("file") MultipartFile file,
+                                  RedirectAttributes redirectAttributes,
+                                  HttpSession session) {
+        if (session.getAttribute("admin") == null) return "redirect:/admin/login";
+
+        Course course = courseRepository.findById(id).orElseThrow();
+
+        if (file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Please select a CSV file to upload.");
+            return "redirect:/admin/dashboard";
+        }
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            String line;
+            boolean isHeader = true;
+            int importedCount = 0;
+            int duplicateCount = 0;
+
+            while ((line = br.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+                if (isHeader) {
+                    isHeader = false;
+                    continue;
+                }
+
+                String[] data = line.split(",");
+                if (data.length < 3) continue;
+
+                String name = data[0].trim();
+                String email = data[1].trim();
+                String lecturerId = data[2].trim();
+
+                // Check duplicate
+                if (lecturerRepository.findByLecturerId(lecturerId).isPresent()) {
+                    duplicateCount++;
+                    continue;
+                }
+
+                Lecturer lecturer = Lecturer.builder()
+                        .name(name)
+                        .email(email)
+                        .lecturerId(lecturerId)
+                        .courses(List.of(course))
+                        .password(null) // set on first-time login
+                        .build();
+
+                lecturerRepository.save(lecturer);
+                importedCount++;
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage", "Successfully imported " + importedCount + " lecturers to " + course.getCourseCode() + "! (Duplicates skipped: " + duplicateCount + ")");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error importing CSV: " + e.getMessage());
+        }
+
+        return "redirect:/admin/dashboard";
     }
 }

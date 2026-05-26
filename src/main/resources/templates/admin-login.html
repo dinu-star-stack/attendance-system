@@ -145,7 +145,7 @@
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
-            padding: 14px 18px 14px 48px;
+            padding: 14px 48px 14px 48px;
             color: var(--text-main);
             font-size: 0.95rem;
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -159,6 +159,21 @@
         }
 
         .form-control-custom:focus + .input-icon {
+            color: var(--accent-primary);
+        }
+
+        .eye-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            cursor: pointer;
+            z-index: 10;
+            transition: color 0.3s;
+        }
+
+        .eye-icon:hover {
             color: var(--accent-primary);
         }
 
@@ -264,8 +279,9 @@
         <div class="text-start">
             <label class="form-label">Password</label>
             <div class="input-group-custom">
-                <input type="password" name="password" class="form-control-custom" placeholder="Enter your password" required>
+                <input type="password" id="password" name="password" class="form-control-custom" placeholder="Enter your password" required>
                 <i class="fas fa-key input-icon"></i>
+                <i class="fas fa-eye eye-icon" onclick="togglePasswordVisibility('password', this)"></i>
             </div>
         </div>
 
@@ -279,6 +295,18 @@
         <i class="fas fa-arrow-left me-1"></i> Back to Main Portal
     </a>
 </div>
+
+<script>
+    function togglePasswordVisibility(inputId, eyeIcon) {
+        const input = document.getElementById(inputId);
+        if (input) {
+            const type = input.getAttribute("type") === "password" ? "text" : "password";
+            input.setAttribute("type", type);
+            eyeIcon.classList.toggle("fa-eye");
+            eyeIcon.classList.toggle("fa-eye-slash");
+        }
+    }
+</script>
 
 </body>
 </html>

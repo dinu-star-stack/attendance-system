@@ -38,8 +38,15 @@
         </div>
 
         <div class="mb-3">
-            <label>Batch Year</label>
-            <input type="number" th:field="*{batchYear}" class="form-control" required>
+            <label class="d-block fw-bold mb-2">Batch Year</label>
+            <div class="form-check form-check-inline me-3">
+                <input class="form-check-input" type="radio" th:field="*{batchYear}" id="batch2023" value="2023" required>
+                <label class="form-check-label" for="batch2023">2023 Batch</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" th:field="*{batchYear}" id="batch2025" value="2025" required>
+                <label class="form-check-label" for="batch2025">2025 Batch</label>
+            </div>
         </div>
 
         <button type="submit" class="btn btn-primary">Update</button>

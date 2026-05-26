@@ -27,7 +27,7 @@ public class Lecturer {
     private String password;
 
     // Lecturer can teach multiple courses
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "lecturer_courses",
             joinColumns = @JoinColumn(name = "lecturer_id"),
