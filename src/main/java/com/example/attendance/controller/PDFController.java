@@ -73,7 +73,9 @@ public class PDFController {
 
     // ===== DUAL PRESENT/ABSENT INDIVIDUAL SESSION REPORT =====
     @GetMapping("/attendance/pdf/lecture/{lectureId}")
-    public void generateLecturePdf(@PathVariable Long lectureId, HttpServletResponse response) throws IOException {
+    public void generateLecturePdf(@PathVariable Long lectureId, 
+                                   @RequestParam(required = false) String timezone,
+                                   HttpServletResponse response) throws IOException {
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "attachment; filename=session_attendance_" + lectureId + ".pdf");
 
@@ -135,8 +137,31 @@ public class PDFController {
         infoTable.addCell(new Phrase("Session Date:", normalBold));
         infoTable.addCell(new Phrase(lecture.getDate(), normalRegular));
         
-        String startTimeFormatted = lecture.getStartTime() != null ? lecture.getStartTime().format(DateTimeFormatter.ofPattern("hh:mm a")) : "N/A";
-        String endTimeFormatted = lecture.getEndTime() != null ? lecture.getEndTime().format(DateTimeFormatter.ofPattern("hh:mm a")) : "N/A";
+        String startTimeFormatted = "N/A";
+        String endTimeFormatted = "N/A";
+        
+        if (lecture.getStartTime() != null) {
+            java.time.ZoneId serverZone = java.time.ZoneId.systemDefault();
+            java.time.ZoneId clientZone = serverZone;
+            if (timezone != null && !timezone.trim().isEmpty()) {
+                try {
+                    clientZone = java.time.ZoneId.of(timezone.trim());
+                } catch (Exception e) {
+                    // Fallback to server zone if timezone name is invalid
+                }
+            }
+            
+            java.time.ZonedDateTime serverStart = lecture.getStartTime().atZone(serverZone);
+            java.time.ZonedDateTime clientStart = serverStart.withZoneSameInstant(clientZone);
+            startTimeFormatted = clientStart.format(DateTimeFormatter.ofPattern("hh:mm a"));
+            
+            if (lecture.getEndTime() != null) {
+                java.time.ZonedDateTime serverEnd = lecture.getEndTime().atZone(serverZone);
+                java.time.ZonedDateTime clientEnd = serverEnd.withZoneSameInstant(clientZone);
+                endTimeFormatted = clientEnd.format(DateTimeFormatter.ofPattern("hh:mm a"));
+            }
+        }
+
         infoTable.addCell(new Phrase("Session Timing:", normalBold));
         infoTable.addCell(new Phrase(startTimeFormatted + " - " + endTimeFormatted + " (5 min QR limit)", normalRegular));
 

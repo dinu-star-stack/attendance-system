@@ -5,6 +5,7 @@ import com.example.attendance.entity.Lecture;
 import com.example.attendance.entity.Lecturer;
 import com.example.attendance.repository.CourseRepository;
 import com.example.attendance.repository.LectureRepository;
+import com.example.attendance.repository.AttendanceRepository;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
@@ -21,11 +22,14 @@ public class LectureController {
 
     private final LectureRepository lectureRepository;
     private final CourseRepository courseRepository;
+    private final AttendanceRepository attendanceRepository;
 
     public LectureController(LectureRepository lectureRepository,
-                             CourseRepository courseRepository) {
+                             CourseRepository courseRepository,
+                             AttendanceRepository attendanceRepository) {
         this.lectureRepository = lectureRepository;
         this.courseRepository = courseRepository;
+        this.attendanceRepository = attendanceRepository;
     }
 
     @GetMapping("/start")
@@ -117,5 +121,25 @@ public class LectureController {
 
         model.addAttribute("lectures", lectureRepository.findAll());
         return "lecture-dashboard";
+    }
+
+    @GetMapping("/delete/{id}")
+    public String deleteLecture(@PathVariable Long id, HttpSession session) {
+        Lecturer lecturer = (Lecturer) session.getAttribute("loggedLecturer");
+        if (lecturer == null) return "redirect:/lecturer/login";
+
+        java.util.Optional<Lecture> lectureOpt = lectureRepository.findById(id);
+        if (lectureOpt.isPresent()) {
+            Lecture lecture = lectureOpt.get();
+            // Validate that this lecture session belongs to the logged-in lecturer
+            if (lecture.getLecturer().getId().equals(lecturer.getId())) {
+                // Delete all attendance records associated with this lecture first
+                java.util.List<com.example.attendance.entity.Attendance> attendances = attendanceRepository.findByLectureId(id);
+                attendanceRepository.deleteAll(attendances);
+                // Then delete the lecture session
+                lectureRepository.deleteById(id);
+            }
+        }
+        return "redirect:/lecture/dashboard";
     }
 }

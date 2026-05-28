@@ -388,6 +388,60 @@ public class AdminController {
                 .collect(Collectors.toList());
     }
 
+    // ===== UNIFIED REAL-TIME SEARCH HUB API =====
+    @GetMapping("/api/search-hub")
+    @ResponseBody
+    public List<Map<String, Object>> searchHub(@RequestParam String query, HttpSession session) {
+        if (session.getAttribute("admin") == null) {
+            return Collections.emptyList();
+        }
+
+        List<Map<String, Object>> results = new ArrayList<>();
+        String lowerQuery = query.trim().toLowerCase();
+
+        // 1. Search Students
+        List<Student> students = studentRepository.findAll();
+        for (Student s : students) {
+            if (s.getName().toLowerCase().contains(lowerQuery) || 
+                s.getRegistrationNumber().toLowerCase().contains(lowerQuery)) {
+                
+                Map<String, Object> map = new HashMap<>();
+                map.put("type", "student");
+                map.put("id", s.getId());
+                map.put("name", s.getName());
+                map.put("email", s.getEmail());
+                map.put("regNumber", s.getRegistrationNumber());
+                map.put("batchYear", s.getBatchYear());
+                map.put("courseType", s.getCourseType());
+                map.put("courseName", s.getCourse().getCourseName());
+                results.add(map);
+            }
+        }
+
+        // 2. Search Lecturers
+        List<Lecturer> lecturers = lecturerRepository.findAll();
+        for (Lecturer l : lecturers) {
+            if (l.getName().toLowerCase().contains(lowerQuery) || 
+                l.getLecturerId().toLowerCase().contains(lowerQuery)) {
+                
+                Map<String, Object> map = new HashMap<>();
+                map.put("type", "lecturer");
+                map.put("id", l.getId());
+                map.put("name", l.getName());
+                map.put("email", l.getEmail());
+                map.put("lecturerId", l.getLecturerId());
+                
+                List<String> courseCodes = l.getCourses().stream()
+                        .map(Course::getCourseCode)
+                        .collect(Collectors.toList());
+                map.put("courses", courseCodes);
+                results.add(map);
+            }
+        }
+
+        return results;
+    }
+
     // ===== CSV TEMPLATES DOWNLOAD =====
     @GetMapping("/template/students")
     public void downloadStudentTemplate(HttpServletResponse response) throws IOException {
@@ -405,6 +459,55 @@ public class AdminController {
         response.getWriter().println("Name,Email,Lecturer ID");
         response.getWriter().println("Dr. Robert Downey,robert@gmail.com,L201");
         response.getWriter().println("Prof. Albert Einstein,albert@gmail.com,L202");
+    }
+
+    // ===== DYNAMIC EXPORTS =====
+    @GetMapping("/course/{id}/export-students")
+    public void exportStudents(@PathVariable Long id, HttpServletResponse response, HttpSession session) throws IOException {
+        if (session.getAttribute("admin") == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        Course course = courseRepository.findById(id).orElseThrow();
+        List<Student> students = studentRepository.findByCourseId(id);
+
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=" + course.getCourseCode() + "_students.csv");
+        
+        response.getWriter().println("Name,Email,Registration Number,Batch Year,Course Type");
+        for (Student s : students) {
+            response.getWriter().println(String.format("%s,%s,%s,%d,%s",
+                s.getName(),
+                s.getEmail(),
+                s.getRegistrationNumber(),
+                s.getBatchYear(),
+                s.getCourseType()
+            ));
+        }
+    }
+
+    @GetMapping("/course/{id}/export-lecturers")
+    public void exportLecturers(@PathVariable Long id, HttpServletResponse response, HttpSession session) throws IOException {
+        if (session.getAttribute("admin") == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        Course course = courseRepository.findById(id).orElseThrow();
+        List<Lecturer> lecturers = lecturerRepository.findAll().stream()
+                .filter(l -> l.getCourses().stream().anyMatch(c -> c.getId().equals(id)))
+                .toList();
+
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=" + course.getCourseCode() + "_lecturers.csv");
+        
+        response.getWriter().println("Name,Email,Lecturer ID");
+        for (Lecturer l : lecturers) {
+            response.getWriter().println(String.format("%s,%s,%s",
+                l.getName(),
+                l.getEmail(),
+                l.getLecturerId()
+            ));
+        }
     }
 
     // ===== CSV BULK IMPORTS =====
@@ -426,7 +529,7 @@ public class AdminController {
             String line;
             boolean isHeader = true;
             int importedCount = 0;
-            int duplicateCount = 0;
+            int updatedCount = 0;
 
             while ((line = br.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
@@ -451,9 +554,17 @@ public class AdminController {
                 
                 String courseType = data[4].trim();
 
-                // Check duplicate
-                if (studentRepository.findByRegistrationNumber(regNumber).isPresent()) {
-                    duplicateCount++;
+                // Check duplicate & Auto-Update
+                Optional<Student> existingOpt = studentRepository.findByRegistrationNumber(regNumber);
+                if (existingOpt.isPresent()) {
+                    Student existing = existingOpt.get();
+                    existing.setName(name);
+                    existing.setEmail(email);
+                    existing.setBatchYear(batchYear);
+                    existing.setCourseType(courseType);
+                    existing.setCourse(course);
+                    studentRepository.save(existing);
+                    updatedCount++;
                     continue;
                 }
 
@@ -471,7 +582,7 @@ public class AdminController {
                 importedCount++;
             }
 
-            redirectAttributes.addFlashAttribute("successMessage", "Successfully imported " + importedCount + " students to " + course.getCourseCode() + "! (Duplicates skipped: " + duplicateCount + ")");
+            redirectAttributes.addFlashAttribute("successMessage", "Successfully processed students: " + importedCount + " created, " + updatedCount + " updated for " + course.getCourseCode() + "!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Error importing CSV: " + e.getMessage());
         }
@@ -497,7 +608,7 @@ public class AdminController {
             String line;
             boolean isHeader = true;
             int importedCount = 0;
-            int duplicateCount = 0;
+            int updatedCount = 0;
 
             while ((line = br.readLine()) != null) {
                 if (line.trim().isEmpty()) continue;
@@ -513,9 +624,33 @@ public class AdminController {
                 String email = data[1].trim();
                 String lecturerId = data[2].trim();
 
-                // Check duplicate
-                if (lecturerRepository.findByLecturerId(lecturerId).isPresent()) {
-                    duplicateCount++;
+                // Check duplicate & Auto-Update
+                Optional<Lecturer> existingOpt = lecturerRepository.findByLecturerId(lecturerId);
+                if (existingOpt.isPresent()) {
+                    Lecturer existing = existingOpt.get();
+                    existing.setName(name);
+                    existing.setEmail(email);
+                    
+                    List<Course> lecturerCourses = existing.getCourses();
+                    if (lecturerCourses == null) {
+                        lecturerCourses = new ArrayList<>();
+                    } else {
+                        lecturerCourses = new ArrayList<>(lecturerCourses);
+                    }
+                    boolean alreadyAssociated = false;
+                    for (Course c : lecturerCourses) {
+                        if (c.getId().equals(course.getId())) {
+                            alreadyAssociated = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyAssociated) {
+                        lecturerCourses.add(course);
+                    }
+                    existing.setCourses(lecturerCourses);
+                    
+                    lecturerRepository.save(existing);
+                    updatedCount++;
                     continue;
                 }
 
@@ -531,7 +666,7 @@ public class AdminController {
                 importedCount++;
             }
 
-            redirectAttributes.addFlashAttribute("successMessage", "Successfully imported " + importedCount + " lecturers to " + course.getCourseCode() + "! (Duplicates skipped: " + duplicateCount + ")");
+            redirectAttributes.addFlashAttribute("successMessage", "Successfully processed lecturers: " + importedCount + " created, " + updatedCount + " updated for " + course.getCourseCode() + "!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Error importing CSV: " + e.getMessage());
         }

@@ -187,10 +187,10 @@ h2 {
     <div class="row mb-5 justify-content-center">
         <div class="col-md-8">
             <div class="card p-4 shadow-sm border-0" style="background: rgba(255,255,255,0.3) !important; border-radius: 20px;">
-                <h5 class="fw-bold text-center mb-3"><i class="fas fa-search me-2 text-primary"></i> Real-time Student Search Hub</h5>
+                <h5 class="fw-bold text-center mb-3"><i class="fas fa-search me-2 text-primary"></i> Real-time Search Hub (Students & Lecturers)</h5>
                 <div class="input-group">
                     <span class="input-group-text bg-white border-0 rounded-start-pill ps-3"><i class="fas fa-search text-muted"></i></span>
-                    <input type="text" id="studentSearchInput" class="form-control border-0 rounded-end-pill py-2" placeholder="Type student name to search instantly..." onkeyup="performSearch()">
+                    <input type="text" id="studentSearchInput" class="form-control border-0 rounded-end-pill py-2" placeholder="Type name or ID to search instantly..." onkeyup="performSearch()">
                 </div>
                 <!-- Dynamic Results List -->
                 <div id="searchResults" class="row mt-3 g-3" style="display: none;">
@@ -221,20 +221,12 @@ h2 {
 
                 <!-- Buttons with icons -->
                 <div class="d-flex flex-column gap-2 mt-3">
-                    <a th:href="@{'/admin/course/' + ${course.id} + '/add-student'}"
-                       class="btn btn-primary btn-animated">
-                        <i class="fas fa-user-plus me-2"></i> Add Student
-                    </a>
-                    <a th:href="@{'/admin/course/' + ${course.id} + '/add-lecturer'}"
-                       class="btn btn-success btn-animated">
-                        <i class="fas fa-chalkboard-teacher me-2"></i> Add Lecturer
-                    </a>
                     <a th:href="@{'/admin/course/' + ${course.id} + '/view-students'}"
-                       class="btn btn-info btn-animated text-white">
+                       class="btn btn-info btn-animated text-white py-2">
                         <i class="fas fa-users me-2"></i> View Students
                     </a>
                     <a th:href="@{'/admin/course/' + ${course.id} + '/view-lecturers'}"
-                       class="btn btn-warning btn-animated text-white">
+                       class="btn btn-warning btn-animated text-white py-2">
                         <i class="fas fa-user-tie me-2"></i> View Lecturers
                     </a>
                 </div>
@@ -243,21 +235,21 @@ h2 {
 
     </div>
 
-    <!-- Bulk CSV Import Center -->
+    <!-- Bulk CSV (Excel) Import Center -->
     <div class="row mt-5 justify-content-center">
         <div class="col-md-8">
             <div class="card p-4 shadow-sm border-0" style="background: rgba(255,255,255,0.3) !important; border-radius: 20px; cursor: default; transform: none; box-shadow: 0 8px 25px rgba(0,0,0,0.08) !important;">
-                <h5 class="fw-bold text-center mb-4"><i class="fas fa-file-excel me-2 text-success"></i> Bulk CSV (Excel) Upload Center</h5>
+                <h5 class="fw-bold text-center mb-4"><i class="fas fa-file-excel me-2 text-success"></i> Bulk Excel & CSV Upload Center</h5>
                 
                 <div class="row g-3 align-items-center mb-4 text-center">
                     <div class="col-md-6">
                         <a href="/admin/template/students" class="btn btn-outline-primary w-100 py-3 rounded-3 btn-animated">
-                            <i class="fas fa-download me-2"></i> Download Student Template
+                            <i class="fas fa-file-csv me-2"></i> Download Student Template
                         </a>
                     </div>
                     <div class="col-md-6">
                         <a href="/admin/template/lecturers" class="btn btn-outline-success w-100 py-3 rounded-3 btn-animated">
-                            <i class="fas fa-download me-2"></i> Download Lecturer Template
+                            <i class="fas fa-file-csv me-2"></i> Download Lecturer Template
                         </a>
                     </div>
                 </div>
@@ -283,12 +275,15 @@ h2 {
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">Select Excel (CSV) File</label>
-                            <input type="file" name="file" class="form-control py-2 rounded-3" accept=".csv" required>
+                            <input type="file" id="bulkImportFileInput" name="file" class="form-control py-2 rounded-3" accept=".csv, .xlsx, .xls" required>
                         </div>
                     </div>
 
-                    <div class="text-center mt-4">
-                        <button type="submit" class="btn btn-success px-5 py-2 btn-animated">
+                    <div class="text-center mt-4 d-flex justify-content-center gap-3 flex-wrap">
+                        <a id="exportCurrentListBtn" href="#" class="btn btn-info text-white px-4 py-2 rounded-3 btn-animated disabled" onclick="triggerExport(event)">
+                            <i class="fas fa-download me-2"></i> Download Current Database List
+                        </a>
+                        <button type="submit" class="btn btn-success px-5 py-2 rounded-3 btn-animated">
                             <i class="fas fa-upload me-2"></i> Import and Create Accounts
                         </button>
                     </div>
@@ -302,6 +297,9 @@ h2 {
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- SheetJS (Excel Parsing Support) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <script>
     // Update the action of bulk import form dynamically based on selections
     function updateFormAction() {
@@ -312,9 +310,90 @@ h2 {
         if (courseId && importType) {
             form.action = `/admin/course/${courseId}/import-${importType}`;
         }
+        updateExportButton();
     }
 
-    // Perform Dynamic AJAX Student Search
+    // Dynamic Export Button URL builder
+    function updateExportButton() {
+        const courseSelect = document.getElementById("importCourseSelect");
+        const typeSelect = document.getElementById("importTypeSelect");
+        const exportBtn = document.getElementById("exportCurrentListBtn");
+        
+        const courseId = courseSelect.value;
+        const type = typeSelect.value;
+        
+        if (courseId && type) {
+            exportBtn.href = `/admin/course/${courseId}/export-${type}`;
+            exportBtn.classList.remove("disabled");
+        } else {
+            exportBtn.href = "#";
+            exportBtn.classList.add("disabled");
+        }
+    }
+    
+    function triggerExport(e) {
+        const exportBtn = document.getElementById("exportCurrentListBtn");
+        if (exportBtn.classList.contains("disabled")) {
+            e.preventDefault();
+        }
+    }
+
+    // Intercept form submit to handle Excel (.xlsx / .xls) parsing client-side
+    document.getElementById("bulkImportForm").addEventListener("submit", function(e) {
+        const fileInput = document.getElementById("bulkImportFileInput");
+        const file = fileInput.files[0];
+        
+        if (file && (file.name.endsWith(".xlsx") || file.name.endsWith(".xls"))) {
+            e.preventDefault(); // Stop normal form submission
+            
+            // Show processing status
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalHtml = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Processing Excel...`;
+
+            const reader = new FileReader();
+            reader.onload = async function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const csv = XLSX.utils.sheet_to_csv(worksheet);
+                    
+                    // Create a blob and file from CSV
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const csvFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".csv", { type: 'text/csv' });
+                    
+                    // Build FormData and submit via fetch
+                    const formData = new FormData();
+                    formData.append("file", csvFile);
+                    
+                    const courseId = document.getElementById("importCourseSelect").value;
+                    const importType = document.getElementById("importTypeSelect").value;
+                    
+                    const response = await fetch(`/admin/course/${courseId}/import-${importType}`, {
+                        method: "POST",
+                        body: formData
+                    });
+                    
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        window.location.href = "/admin/dashboard?success";
+                    }
+                } catch (error) {
+                    console.error("Error importing file: ", error);
+                    alert("Failed to import Excel file. Please check format.");
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalHtml;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    });
+
+    // Perform Dynamic AJAX Unified Search Hub
     async function performSearch() {
         const query = document.getElementById("studentSearchInput").value.trim();
         const resultsContainer = document.getElementById("searchResults");
@@ -326,36 +405,69 @@ h2 {
         }
 
         try {
-            const response = await fetch(`/admin/api/search-students?name=${encodeURIComponent(query)}`);
-            const students = await response.json();
+            const response = await fetch(`/admin/api/search-hub?query=${encodeURIComponent(query)}`);
+            const items = await response.json();
             
             resultsContainer.innerHTML = "";
             resultsContainer.style.display = "flex";
 
-            if (students.length === 0) {
+            if (items.length === 0) {
                 resultsContainer.innerHTML = `
                     <div class="col-12 text-center text-muted py-4">
                         <i class="fas fa-user-slash fa-2x mb-2 text-danger"></i>
-                        <p class="mb-0 fw-bold">No matching student found</p>
+                        <p class="mb-0 fw-bold">No matching student or lecturer found</p>
                     </div>
                 `;
                 return;
             }
 
-            students.forEach(s => {
+            items.forEach(item => {
                 const card = document.createElement("div");
                 card.className = "col-md-6 text-start";
-                card.innerHTML = `
-                    <div class="card p-3 shadow-sm border-0" style="background: rgba(255,255,255,0.7) !important; cursor: default; border-left: 5px solid #007bff !important; transition: none; transform: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;">
-                        <h6 class="fw-bold mb-1" style="color: #1f2a36;"><i class="fas fa-user-graduate text-primary me-2"></i>${s.name}</h6>
-                        <small class="text-muted d-block mb-1"><i class="fas fa-id-badge me-2"></i>Reg: <strong>${s.regNumber}</strong></small>
-                        <small class="text-muted d-block mb-1"><i class="fas fa-envelope me-2"></i>Email: ${s.email}</small>
-                        <div class="d-flex justify-content-between mt-2 pt-2 border-top" style="border-color: rgba(0,0,0,0.05) !important;">
-                            <span class="badge bg-secondary font-monospace" style="font-size: 0.75rem;">Batch: ${s.batchYear}</span>
-                            <span class="badge bg-primary" style="font-size: 0.75rem;">Course: ${s.courseName} (${s.courseType})</span>
+                
+                if (item.type === "student") {
+                    card.innerHTML = `
+                        <div class="card p-3 shadow-sm border-0" style="background: rgba(255,255,255,0.7) !important; cursor: default; border-left: 5px solid #007bff !important; transition: none; transform: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;">
+                            <h6 class="fw-bold mb-1" style="color: #1f2a36;">
+                                <i class="fas fa-user-graduate text-primary me-2"></i>${item.name} 
+                                <span class="badge bg-primary ms-2" style="font-size: 0.65rem;">Student</span>
+                            </h6>
+                            <small class="text-muted d-block mb-1"><i class="fas fa-id-badge me-2"></i>Reg: <strong>${item.regNumber}</strong></small>
+                            <small class="text-muted d-block mb-1"><i class="fas fa-envelope me-2"></i>Email: ${item.email}</small>
+                            <small class="text-muted d-block mb-1"><i class="fas fa-book me-2"></i>Course: ${item.courseName} (${item.courseType})</small>
+                            <small class="text-muted d-block mb-2"><i class="fas fa-calendar-alt me-2"></i>Batch: ${item.batchYear}</small>
+                            <div class="d-flex justify-content-end gap-2 pt-2 border-top" style="border-color: rgba(0,0,0,0.05) !important;">
+                                <a href="/admin/student/edit/${item.id}" class="btn btn-sm btn-outline-primary px-3">
+                                    <i class="fas fa-edit me-1"></i> Edit
+                                </a>
+                                <a href="/admin/student/delete/${item.id}" onclick="return confirm('Are you sure you want to remove student ${item.name}?');" class="btn btn-sm btn-outline-danger px-3">
+                                    <i class="fas fa-trash-alt me-1"></i> Remove
+                                </a>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else if (item.type === "lecturer") {
+                    const coursesList = item.courses && item.courses.length > 0 ? item.courses.join(", ") : "None";
+                    card.innerHTML = `
+                        <div class="card p-3 shadow-sm border-0" style="background: rgba(255,255,255,0.7) !important; cursor: default; border-left: 5px solid #28a745 !important; transition: none; transform: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;">
+                            <h6 class="fw-bold mb-1" style="color: #1f2a36;">
+                                <i class="fas fa-chalkboard-teacher text-success me-2"></i>${item.name} 
+                                <span class="badge bg-success ms-2" style="font-size: 0.65rem;">Lecturer</span>
+                            </h6>
+                            <small class="text-muted d-block mb-1"><i class="fas fa-id-badge me-2"></i>Lecturer ID: <strong>${item.lecturerId}</strong></small>
+                            <small class="text-muted d-block mb-1"><i class="fas fa-envelope me-2"></i>Email: ${item.email}</small>
+                            <small class="text-muted d-block mb-2"><i class="fas fa-book-open me-2"></i>Assigned Courses: ${coursesList}</small>
+                            <div class="d-flex justify-content-end gap-2 pt-2 border-top" style="border-color: rgba(0,0,0,0.05) !important;">
+                                <a href="/admin/lecturer/edit/${item.id}" class="btn btn-sm btn-outline-success px-3">
+                                    <i class="fas fa-edit me-1"></i> Edit
+                                </a>
+                                <a href="/admin/lecturer/delete/${item.id}" onclick="return confirm('Are you sure you want to remove lecturer ${item.name}?');" class="btn btn-sm btn-outline-danger px-3">
+                                    <i class="fas fa-trash-alt me-1"></i> Remove
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
                 resultsContainer.appendChild(card);
             });
         } catch (error) {
